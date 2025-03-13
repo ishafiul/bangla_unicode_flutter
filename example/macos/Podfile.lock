@@ -1,0 +1,22 @@
+PODS:
+  - bangla_unicode_flutter (0.0.1):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+
+DEPENDENCIES:
+  - bangla_unicode_flutter (from `Flutter/ephemeral/.symlinks/plugins/bangla_unicode_flutter/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+
+EXTERNAL SOURCES:
+  bangla_unicode_flutter:
+    :path: Flutter/ephemeral/.symlinks/plugins/bangla_unicode_flutter/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+
+SPEC CHECKSUMS:
+  bangla_unicode_flutter: 25c669531e540d81d9f9c9acc8a85e1f6d452449
+  FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
+
+PODFILE CHECKSUM: 7eb978b976557c8c1cd717d8185ec483fd090a82
+
+COCOAPODS: 1.16.2
