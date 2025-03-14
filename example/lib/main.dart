@@ -31,6 +31,7 @@ import 'package:flutter/material.dart';
 import 'package:bangla_unicode_flutter/src/rust/api/bangla/parser.dart';
 import 'package:bangla_unicode_flutter/src/rust/frb_generated.dart';
 import 'dart:async';
+import 'package:flutter/services.dart';
 
 Future<void> main() async {
   await RustLib.init();
@@ -83,8 +84,22 @@ class _BanglaUnicodeDemoState extends State<BanglaUnicodeDemo> {
 
   void _onInputChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      if (_inputController.text.isNotEmpty) {
+    _debounce = Timer(const Duration(milliseconds: 100), () {
+      final input = _inputController.text;
+      
+      // Update the output text immediately
+      if (input.isNotEmpty) {
+        setState(() {
+          _outputText = parseBangla(text: input, bijoy: false);
+        });
+      } else {
+        setState(() {
+          _outputText = '';
+        });
+      }
+      
+      // Get suggestions
+      if (input.isNotEmpty) {
         _getSuggestions();
       } else {
         setState(() {
@@ -118,24 +133,24 @@ class _BanglaUnicodeDemoState extends State<BanglaUnicodeDemo> {
     });
   }
 
-  void _convertText() {
-    final input = _inputController.text;
-    if (input.isEmpty) return;
-
+  void _clearText() {
     setState(() {
-      _outputText = parseBangla(text: input, bijoy: false);
-      _showSuggestions = false;
-    });
-  }
-
-  void _reverseText() {
-    if (_outputText.isEmpty) return;
-
-    setState(() {
-      _inputController.text = reverseBangla(text: _outputText);
+      _inputController.clear();
       _outputText = '';
       _showSuggestions = false;
     });
+  }
+  
+  void _copyToClipboard() {
+    if (_outputText.isNotEmpty) {
+      Clipboard.setData(ClipboardData(text: _outputText));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bangla text copied to clipboard'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -155,10 +170,14 @@ class _BanglaUnicodeDemoState extends State<BanglaUnicodeDemo> {
               children: [
                 TextField(
                   controller: _inputController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Enter English text (e.g., "ami banglay gan gai")',
-                    border: OutlineInputBorder(),
-                    hintText: 'Type for autocomplete suggestions',
+                    border: const OutlineInputBorder(),
+                    hintText: 'Type for instant Bangla conversion',
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: _clearText,
+                    ),
                   ),
                   maxLines: 3,
                 ),
@@ -189,34 +208,20 @@ class _BanglaUnicodeDemoState extends State<BanglaUnicodeDemo> {
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: ElevatedButton(
-                      onPressed: _convertText,
-                      child: const Text('Convert to Bangla'),
-                    ),
-                  ),
+                const Text(
+                  'Bangla Output:',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: ElevatedButton(
-                      onPressed: _reverseText,
-                      child: const Text('Reverse to English'),
-                    ),
-                  ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.copy),
+                  onPressed: _outputText.isEmpty ? null : _copyToClipboard,
+                  tooltip: 'Copy to clipboard',
                 ),
               ],
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Output:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Container(
@@ -225,9 +230,28 @@ class _BanglaUnicodeDemoState extends State<BanglaUnicodeDemo> {
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(8),
               ),
+              constraints: const BoxConstraints(minHeight: 100),
               child: Text(
                 _outputText,
                 style: const TextStyle(fontSize: 20),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Popular Examples:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildExampleChip('ami', 'আমি'),
+                  _buildExampleChip('bangla', 'বাংলা'),
+                  _buildExampleChip('bangladesh', 'বাংলাদেশ'),
+                  _buildExampleChip('dhaka', 'ঢাকা'),
+                  _buildExampleChip('aami', 'আমি'),
+                ],
               ),
             ),
           ],
@@ -236,4 +260,20 @@ class _BanglaUnicodeDemoState extends State<BanglaUnicodeDemo> {
     );
   }
 
+  Widget _buildExampleChip(String english, String bangla) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: ActionChip(
+        label: Text(english),
+        tooltip: bangla,
+        onPressed: () {
+          setState(() {
+            _inputController.text = english;
+            _outputText = bangla;
+            _showSuggestions = false;
+          });
+        },
+      ),
+    );
+  }
 }
